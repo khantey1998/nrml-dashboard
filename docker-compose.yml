@@ -1,0 +1,66 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dashboard_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./dashboard:/var/www
+    depends_on:
+      - mysql
+    networks:
+      - dashboard
+
+  nginx:
+    image: nginx:alpine
+    container_name: dashboard_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./dashboard:/var/www
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - dashboard
+
+  mysql:
+    image: mysql:8.0
+    container_name: dashboard_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: dashboard
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3308:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - dashboard
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: dashboard_pma
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    ports:
+      - "8083:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: laravel
+      PMA_PASSWORD: secret
+    networks:
+      - dashboard
+
+networks:
+  dashboard:
+
+volumes:
+  dbdata:
