@@ -158,16 +158,70 @@ class DashboardService
     /**
      * Province distribution
      */
-    public function provinceDistribution($surveillanceId, $dateFrom, $dateTo)
+    public function provinceDistribution($dateFrom, $dateTo)
     {
         return SurveillanceCase::selectRaw("
-                site_province_name,
-                COUNT(*) as total
-            ")
-            ->where('surveillance_id', $surveillanceId)
-            ->whereBetween('case_date', [$dateFrom, $dateTo])
+            site_province_name,
+            COUNT(*) as total
+        ")
+            ->join('case_lab_results', 'surveillance_cases.lab_code', '=', 'case_lab_results.lab_code')
+
+            ->whereIn('surveillance_cases.surveillance_id', [1, 2, 3]) // SARI ILI LBM
+            ->where('case_lab_results.is_positive', 1)
+
+            ->whereBetween('surveillance_cases.case_date', [$dateFrom, $dateTo])
+
             ->groupBy('site_province_name')
             ->orderByDesc('total')
+            ->get();
+    }
+    public function sentinelMap($dateFrom, $dateTo)
+    {
+        return SurveillanceCase::selectRaw("
+            sentinel_site_id,
+            sentinel_site_name,
+            site_province_name,
+            surveillance_id,
+            COUNT(*) as total
+        ")
+            ->join('case_lab_results', 'surveillance_cases.lab_code', '=', 'case_lab_results.lab_code')
+
+            ->whereIn('surveillance_cases.surveillance_id', [1, 2, 3])
+            ->where('case_lab_results.is_positive', 1)
+
+            ->whereBetween('surveillance_cases.case_date', [$dateFrom, $dateTo])
+
+            ->groupBy(
+                'sentinel_site_id',
+                'sentinel_site_name',
+                'site_province_name',
+                'surveillance_id'
+            )
+            ->get();
+    }
+    public function provinceCircles($dateFrom, $dateTo)
+    {
+        return SurveillanceCase::selectRaw("
+            surveillance_cases.site_province_name,
+            surveillance_cases.surveillance_id,
+            COUNT(*) as total
+        ")
+            ->join(
+                'case_lab_results',
+                'surveillance_cases.lab_code',
+                '=',
+                'case_lab_results.lab_code'
+            )
+
+            ->whereIn('surveillance_cases.surveillance_id', [1, 2, 3])
+            ->where('case_lab_results.is_positive', 1)
+
+            ->whereBetween('surveillance_cases.case_date', [$dateFrom, $dateTo])
+
+            ->groupBy(
+                'surveillance_cases.site_province_name',
+                'surveillance_cases.surveillance_id'
+            )
             ->get();
     }
 

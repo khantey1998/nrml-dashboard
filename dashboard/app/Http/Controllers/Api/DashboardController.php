@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Services\DashboardService;
 use Carbon\Carbon;
+use App\Models\SurveillanceCase;
 
 class DashboardController extends Controller
 {
@@ -27,8 +28,23 @@ class DashboardController extends Controller
      */
     public function summary(Request $request)
     {
-        $dateFrom = $request->query('date_from', Carbon::now()->subDays(7)->toDateString());
-        $dateTo = $request->query('date_to', Carbon::now()->toDateString());
+        if ($request->has('start_year')) {
+
+            $startYear = $request->query('start_year');
+            $startWeek = $request->query('start_week');
+
+            $endYear = $request->query('end_year');
+            $endWeek = $request->query('end_week');
+
+            $dateFrom = Carbon::now()->setISODate($startYear, $startWeek)->startOfWeek()->toDateString();
+            $dateTo = Carbon::now()->setISODate($endYear, $endWeek)->endOfWeek()->toDateString();
+
+        } else {
+
+            $dateFrom = $request->query('date_from', Carbon::now()->subDays(7)->toDateString());
+            $dateTo = $request->query('date_to', Carbon::now()->toDateString());
+
+        }
 
         $data = $this->service->summaryCards($dateFrom, $dateTo);
 
@@ -42,8 +58,24 @@ class DashboardController extends Controller
     public function trend(Request $request)
     {
         $periodType = $request->query('period_type', 'week');
-        $dateFrom = $request->query('date_from');
-        $dateTo = $request->query('date_to');
+
+        if ($request->has('start_year')) {
+
+            $startYear = $request->query('start_year');
+            $startWeek = $request->query('start_week');
+
+            $endYear = $request->query('end_year');
+            $endWeek = $request->query('end_week');
+
+            $dateFrom = Carbon::now()->setISODate($startYear, $startWeek)->startOfWeek()->toDateString();
+            $dateTo = Carbon::now()->setISODate($endYear, $endWeek)->endOfWeek()->toDateString();
+
+        } else {
+
+            $dateFrom = $request->query('date_from');
+            $dateTo = $request->query('date_to');
+
+        }
 
         $data = $this->service->aggregateAllPrograms(
             $periodType,
@@ -59,19 +91,71 @@ class DashboardController extends Controller
      */
     public function province(Request $request)
     {
-        $surveillanceId = $request->query('surveillance_id');
-        $dateFrom = $request->query('date_from');
-        $dateTo = $request->query('date_to');
+        if ($request->has('start_year')) {
 
-        $data = $this->service->provinceDistribution(
-            $surveillanceId,
-            $dateFrom,
-            $dateTo
-        );
+            $startYear = $request->query('start_year');
+            $startWeek = $request->query('start_week');
+
+            $endYear = $request->query('end_year');
+            $endWeek = $request->query('end_week');
+
+            $dateFrom = Carbon::now()
+                ->setISODate($startYear, $startWeek)
+                ->startOfWeek()
+                ->toDateString();
+
+            $dateTo = Carbon::now()
+                ->setISODate($endYear, $endWeek)
+                ->endOfWeek()
+                ->toDateString();
+
+        } else {
+
+            $dateFrom = $request->query('date_from');
+            $dateTo = $request->query('date_to');
+
+        }
+
+        $rows = $this->service->provinceDistribution($dateFrom, $dateTo);
+
+        $result = [];
+
+        foreach ($rows as $row) {
+            $result[$row->site_province_name] = $row->total;
+        }
+
+        return response()->json($result);
+    }
+    public function sentinelMap(Request $request)
+    {
+        $startYear = $request->query('start_year');
+        $startWeek = $request->query('start_week');
+
+        $endYear = $request->query('end_year');
+        $endWeek = $request->query('end_week');
+
+        $dateFrom = Carbon::now()->setISODate($startYear, $startWeek)->startOfWeek();
+        $dateTo = Carbon::now()->setISODate($endYear, $endWeek)->endOfWeek();
+
+        $data = $this->service->sentinelMap($dateFrom, $dateTo);
 
         return response()->json($data);
     }
+    public function provinceCircles(Request $request)
+    {
+        $startYear = $request->query('start_year');
+        $startWeek = $request->query('start_week');
 
+        $endYear = $request->query('end_year');
+        $endWeek = $request->query('end_week');
+
+        $dateFrom = Carbon::now()->setISODate($startYear, $startWeek)->startOfWeek();
+        $dateTo = Carbon::now()->setISODate($endYear, $endWeek)->endOfWeek();
+
+        $data = $this->service->provinceCircles($dateFrom, $dateTo);
+
+        return response()->json($data);
+    }
     /**
      * Pathogen distribution
      */

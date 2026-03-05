@@ -39,7 +39,7 @@ services:
     ports:
       - "3308:3306"
     volumes:
-      - dbdata:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/dashboard.sql
     networks:
       - dashboard
 
@@ -61,6 +61,7 @@ services:
 
 networks:
   dashboard:
+
 
 volumes:
   dbdata:
